@@ -9,7 +9,7 @@
         </div>
         <div class="container">
             <div class="handle-box">
-                <el-input v-model="query.title" placeholder="标题" class="handle-input mr10"></el-input>
+                <el-input v-model="query.title" placeholder="标题" class="handle-input mr10" clearable></el-input>
                 <el-button type="primary" icon="el-icon-search" @click="handleSearch">搜索</el-button>
             </div>
             <el-button style="margin-bottom: 10px" type="primary" icon="el-icon-circle-plus-outline" @click="add">新增</el-button>

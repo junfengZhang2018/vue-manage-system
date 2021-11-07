@@ -9,7 +9,7 @@
         </div>
         <div class="container">
             <div class="handle-box">
-                <el-input v-model="query.name" placeholder="名称" class="handle-input mr10"></el-input>
+                <el-input v-model="query.name" placeholder="名称" class="handle-input mr10" clearable></el-input>
                 <el-button type="primary" icon="el-icon-search" @click="handleSearch">搜索</el-button>
             </div>
             <el-button style="margin-bottom: 10px" type="primary" icon="el-icon-circle-plus-outline" @click="add">新增</el-button>
@@ -17,9 +17,16 @@
                 <el-table-column prop="id" label="ID" width="55" align="center"></el-table-column>
                 <el-table-column prop="name" label="名称"></el-table-column>
                 <el-table-column prop="desc" label="描述"></el-table-column>
+                <el-table-column prop="oldPrice" label="原价"></el-table-column>
+                <el-table-column prop="price" label="折扣价"></el-table-column>
                 <el-table-column prop="image" label="主图">
                     <template #default="scope">
                         <el-image v-if="scope.row.image" style="width: 100px; height: 100px" :src="imageUrl + scope.row.image" fit="fill" :preview-src-list="[imageUrl + scope.row.image]"></el-image>
+                    </template>
+                </el-table-column>
+                <el-table-column label="是否在首页展示">
+                    <template #default="scope">
+                        {{scope.row.homePageShow ? '是' : '否'}}
                     </template>
                 </el-table-column>
                 <el-table-column prop="updateTime" label="修改时间"></el-table-column>
@@ -40,9 +47,26 @@
 
         <!-- 编辑弹出框 -->
         <el-dialog :title="ifAdd ? '新增' : '编辑'" v-model="editVisible" width="50%" @close="resetForm" v-if="editVisible">
-            <el-form ref="formRef" :model="form" :rules="rules" label-width="70px">
+            <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
                 <el-form-item label="名称" prop="name">
                     <el-input v-model="form.name" maxlength="30"></el-input>
+                </el-form-item>
+                <el-form-item label="原价" prop="oldPrice">
+                    <el-input v-model="form.oldPrice" type="number"></el-input>
+                </el-form-item>
+                <el-form-item label="折扣价" prop="price">
+                    <el-input v-model="form.price" type="number"></el-input>
+                </el-form-item>
+                <el-form-item label="是否在首页展示">
+                    <el-select v-model="form.homePageShow">
+                        <el-option
+                          v-for="item in showOption"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        >
+                        </el-option>
+                    </el-select>
                 </el-form-item>
                 <el-form-item label="描述" prop="desc">
                     <el-input v-model="form.desc" type="textarea" :rows="5"></el-input>
@@ -78,6 +102,10 @@ export default {
     name: "msg",
     setup() {
         const imageUrl = import.meta.env.VITE_IMAGEURL;
+        const showOption = [
+            { value: 0, label: '否' },
+            { value: 1, label: '是' }
+        ];
         const formRef = ref(null);
         const rules = {
             name: [
@@ -89,6 +117,12 @@ export default {
             ],
             desc: [
                 { required: true, message: "请输入商品描述", trigger: "blur" },
+            ],
+            oldPrice: [
+                { required: true, message: "请输入原价", trigger: "blur" },
+            ],
+            price: [
+                { required: true, message: "请输入折扣价", trigger: "blur" },
             ],
         };
         const query = reactive({
@@ -138,7 +172,10 @@ export default {
         const editVisible = ref(false);
         let form = reactive({
             name: '',
-            desc: ''
+            desc: '',
+            oldPrice: '',
+            price: '',
+            homePageShow: 0
         });
 
         let formdata = new FormData();
@@ -271,6 +308,7 @@ export default {
             handlePictureCardPreview,
             dialogImageUrl,
             dialogVisible,
+            showOption
         };
     },
     methods: {
