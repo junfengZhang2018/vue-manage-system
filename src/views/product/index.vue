@@ -102,8 +102,6 @@
 import { ref, reactive, watch, onMounted, onBeforeUnmount } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
-// import { QuillEditor } from '@vueup/vue-quill'
-// import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import WangEditor from "wangEditor";
 import Editor from '../Editor.vue'
 import { getProduct, delProduct, updateProduct, addProduct } from "@/api/index";
@@ -111,7 +109,6 @@ import { getProduct, delProduct, updateProduct, addProduct } from "@/api/index";
 export default {
     name: "msg",
     components: {
-        // QuillEditor
         Editor
     },
     setup() {
