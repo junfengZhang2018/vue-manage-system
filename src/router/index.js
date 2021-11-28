@@ -32,6 +32,13 @@ const routes = [
                 },
                 component: () => import ( /* webpackChunkName: "product" */ "../views/product/index.vue")
             }, {
+                path: "/product/form",
+                name: "productForm",
+                meta: {
+                    title: '商品管理表单'
+                },
+                component: () => import ( /* webpackChunkName: "productForm" */ "../views/product/form.vue")
+            }, {
                 path: "/table",
                 name: "basetable",
                 meta: {

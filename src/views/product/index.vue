@@ -46,40 +46,45 @@
         </div>
 
         <!-- 编辑弹出框 -->
-        <el-dialog :title="ifAdd ? '新增' : '编辑'" v-model="editVisible" width="50%" @close="resetForm" v-if="editVisible">
-            <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-                <el-form-item label="名称" prop="name">
-                    <el-input v-model="form.name" maxlength="30"></el-input>
-                </el-form-item>
-                <el-form-item label="原价" prop="oldPrice">
-                    <el-input v-model="form.oldPrice" type="number"></el-input>
-                </el-form-item>
-                <el-form-item label="折扣价" prop="price">
-                    <el-input v-model="form.price" type="number"></el-input>
-                </el-form-item>
-                <el-form-item label="是否在首页展示">
-                    <el-select v-model="form.homePageShow">
-                        <el-option
-                          v-for="item in showOption"
-                          :key="item.value"
-                          :label="item.label"
-                          :value="item.value"
-                        >
-                        </el-option>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="描述" prop="desc">
-                    <el-input v-model="form.desc" type="textarea" :rows="5"></el-input>
-                </el-form-item>
-            </el-form>
-            <ul class="imageField">
-                <li v-for="(item, i) in imageList" :key="i">
-                    <p><span v-if="!i" style="color: red">*</span> {{item.name}}</p>
-                    <el-upload :ref="'upload'+i" class="avatar-uploader" accept=".jpg,.jpeg,.png" action="#" :file-list="item.fileList" :limit="limit" list-type="picture-card" :on-change="handleChange(i)" :on-remove="handleRemove(i)" :on-preview="handlePictureCardPreview" :auto-upload="false" :multiple="false" :class="{'hide': item.hideUploadEdit}">
-                        <i class="el-icon-plus"></i>
-                    </el-upload>
-                </li>
-            </ul>
+        <el-dialog :title="ifAdd ? '新增' : '编辑'" v-model="editVisible" width="80%" @close="resetForm" v-if="editVisible">
+            <el-scrollbar style="height:100%">
+                <div style="height:420px;">
+                    <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
+                        <el-form-item label="名称" prop="name">
+                            <el-input v-model="form.name" maxlength="30"></el-input>
+                        </el-form-item>
+                        <el-form-item label="原价" prop="oldPrice">
+                            <el-input v-model="form.oldPrice" type="number"></el-input>
+                        </el-form-item>
+                        <el-form-item label="折扣价" prop="price">
+                            <el-input v-model="form.price" type="number"></el-input>
+                        </el-form-item>
+                        <el-form-item label="是否在首页展示">
+                            <el-select v-model="form.homePageShow">
+                                <el-option
+                                  v-for="item in showOption"
+                                  :key="item.value"
+                                  :label="item.label"
+                                  :value="item.value"
+                                >
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="描述" prop="desc">
+                            <el-input v-model="form.desc" type="textarea" :rows="5"></el-input>
+                        </el-form-item>
+                    </el-form>
+                    <ul class="imageField">
+                        <li v-for="(item, i) in imageList" :key="i">
+                            <p><span v-if="!i" style="color: red">*</span> {{item.name}}</p>
+                            <el-upload :ref="'upload'+i" class="avatar-uploader" accept=".jpg,.jpeg,.png" action="#" :file-list="item.fileList" :limit="limit" list-type="picture-card" :on-change="handleChange(i)" :on-remove="handleRemove(i)" :on-preview="handlePictureCardPreview" :auto-upload="false" :multiple="false" :class="{'hide': item.hideUploadEdit}">
+                                <i class="el-icon-plus"></i>
+                            </el-upload>
+                        </li>
+                    </ul>
+                    <Editor />
+                </div>
+            </el-scrollbar>
             <template #footer>
                 <span class="dialog-footer">
                     <el-button @click="editVisible = false">取 消</el-button>
@@ -94,13 +99,23 @@
 </template>
 
 <script>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, onMounted, onBeforeUnmount } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useRouter } from "vue-router";
+// import { QuillEditor } from '@vueup/vue-quill'
+// import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import WangEditor from "wangEditor";
+import Editor from '../Editor.vue'
 import { getProduct, delProduct, updateProduct, addProduct } from "@/api/index";
 
 export default {
     name: "msg",
+    components: {
+        // QuillEditor
+        Editor
+    },
     setup() {
+        const router = useRouter();
         const imageUrl = import.meta.env.VITE_IMAGEURL;
         const showOption = [
             { value: 0, label: '否' },
@@ -191,7 +206,7 @@ export default {
             formdata = new FormData();
         }
 
-        const imgField = ['image', 'detailImage1', 'detailImage2', 'detailImage3', 'detailImage4'];
+        const imgField = ['image', 'detailImage1', 'detailImage2', 'detailImage3'];
         let imageList = reactive([{
             name: '主图',
             hideUploadEdit: false,
@@ -208,13 +223,16 @@ export default {
             name: '副图3',
             hideUploadEdit: false,
             fileList: []
-        }, {
-            name: '副图4',
-            hideUploadEdit: false,
-            fileList: []
-        }])
+        },
+        //  {
+        //     name: '副图4',
+        //     hideUploadEdit: false,
+        //     fileList: []
+        // }
+        ])
         
         const handleEdit = (row) => {
+            // router.push('/product/form');
             ifAdd.value = false;
             Object.keys(form).forEach((item) => {
                 form[item] = row[item];
@@ -283,6 +301,26 @@ export default {
             })
         };
 
+        // const editor = ref(null);
+        // const content = reactive({
+        //     html: "",
+        //     text: "",
+        // });
+        // let instance;
+        // onMounted(() => {
+        //     instance = new WangEditor(editor.value);
+        //     instance.config.zIndex = 1;
+        //     instance.create();
+        // });
+        // onBeforeUnmount(() => {
+        //     instance.destroy();
+        //     instance = null;
+        // });
+        // const syncHTML = () => {
+        //     content.html = instance.txt.html();
+        //     console.log(content.html);
+        // };
+
         return {
             imageUrl,
             query,
@@ -308,7 +346,11 @@ export default {
             handlePictureCardPreview,
             dialogImageUrl,
             dialogVisible,
-            showOption
+            showOption,
+            // 编辑器
+            // syncHTML,
+            // editor,
+            // content,
         };
     },
     methods: {
