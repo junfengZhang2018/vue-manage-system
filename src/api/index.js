@@ -73,3 +73,11 @@ export const addProduct = data => {
         form: true
     });
 };
+
+export const delPic = data => {
+    return request({
+        url: '/common/delete-img',
+        method: 'post',
+        data
+    });
+};

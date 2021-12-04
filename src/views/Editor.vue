@@ -15,7 +15,7 @@
                 <a href="https://www.wangeditor.com/doc/" target="_blank">wangEditor</a>
             </div> -->
             <div class="mgb20" ref='editor'></div>
-            <el-button type="primary" @click="syncHTML">提交</el-button>
+            <!-- <el-button type="primary" @click="syncHTML">提交</el-button> -->
         </div>
     </div>
 </template>
@@ -23,32 +23,24 @@
 <script>
 import WangEditor from "wangEditor";
 import { ref, reactive, onMounted, onBeforeUnmount } from "vue";
+import { delPic } from "@/api/index";
 export default {
     name: "editor",
-    setup() {
-        const editor = ref(null);
-        const content = reactive({
-            html: "",
-            text: "",
-        });
+    props: ['info'],
+    setup(props, { emit }) {
+        const editor = ref();
         let instance;
-        // 图片数组
-        let imgsrc;
+        // 所有上传的图片数组
+        let allUploaded = [],
+            startUploaded = [];
         const onchange = (html) => {
             // html 即变化之后的内容
-            if (imgsrc.length !== 0) {
-              let nowimgs = getSrc(html)
-              let merge = imgsrc.concat(nowimgs).filter(function (v, i, arr) {
-                return arr.indexOf(v) === arr.lastIndexOf(v)
-              })
-              console.log(merge)
-              for (let x in merge) {
-                let colds = merge[x].split('/')
-                console.log('删除文件', colds)
-                // this.deleteImage(colds) //服务器删除文件
-              }
-              imgsrc = nowimgs
-            }
+            emit('update:info', html);
+            console.log(html);
+        }
+        // 发送删除文件请求
+        const deleteImage = (fileArr) => {
+            delPic({ fileArr });
         }
         /**
         * 取出区域内所有img的src
@@ -60,12 +52,36 @@ export default {
             var arr = html.match(imgReg)
             let imgs = []
             if (arr) {
-              for (let i = 0; i < arr.length; i++) {
-                var src = arr[i].match(srcReg)[1]
-                imgs.push(src)
-              }
+                for (let i = 0; i < arr.length; i++) {
+                    var src = arr[i].match(srcReg)[1]
+                    imgs.push(src)
+                }
             }
             return imgs
+        }
+
+        const diff = (a, b) => a.filter(function (val) { return b.indexOf(val) === -1 });
+
+        const confirmContent = () => {
+            const confirmImg = getSrc(instance.txt.html());
+            let diffArr = diff(startUploaded.concat(allUploaded), confirmImg);
+            if (diffArr.length) {
+                diffArr = diffArr.map(item => {
+                    const [ , filename ] = item.split('/public');
+                    return filename;
+                })
+                deleteImage(diffArr);
+            }
+        }
+
+        const cancelContent = () => {
+            allUploaded = allUploaded.map(item => {
+                const [ , filename ] = item.split('/public');
+                return filename;
+            })
+            if (allUploaded.length) {
+                deleteImage(allUploaded);
+            }
         }
 
         onMounted(() => {
@@ -77,35 +93,38 @@ export default {
             ];
             instance.config.zIndex = 1;
             instance.config.uploadImgMaxLength = 1;
-            instance.config.uploadImgServer = `${import.meta.env.VITE_API}/product/upload-img`;
+            instance.config.uploadImgServer = `${import.meta.env.VITE_API}/common/upload-img`;
             instance.config.uploadFileName = 'image';
+            instance.config.pasteIgnoreImg = true;
             instance.config.uploadImgHeaders = {
                 token: localStorage.getItem('token')
             }
             instance.config.uploadImgHooks = {
                 // 图片上传并返回了结果，图片插入已成功
                 success: function(xhr) {
-                    console.log('success', xhr)
-                    imgsrc = getSrc(instance.txt.html())
+                    const { errno, data: [{url}] } = JSON.parse(xhr.response);
+                    if (errno === 0) {
+                        allUploaded.push(url);
+                    }
                 },
             }
             instance.config.onchange = function (html) {
                 onchange(html)
             };
             instance.create();
+            if (props.info) {
+                instance.txt.html(props.info);
+                startUploaded = getSrc(instance.txt.html());
+            }
         });
         onBeforeUnmount(() => {
             instance.destroy();
             instance = null;
         });
-        const syncHTML = () => {
-            content.html = instance.txt.html();
-            console.log(content.html);
-        };
         return {
-            syncHTML,
             editor,
-            content,
+            confirmContent,
+            cancelContent
         };
     },
 };

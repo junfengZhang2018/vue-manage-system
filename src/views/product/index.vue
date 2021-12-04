@@ -46,48 +46,46 @@
         </div>
 
         <!-- 编辑弹出框 -->
-        <el-dialog :title="ifAdd ? '新增' : '编辑'" v-model="editVisible" width="80%" @close="resetForm" v-if="editVisible">
+        <el-dialog :title="ifAdd ? '新增' : '编辑'" v-model="editVisible" :fullscreen="true" @close="closeDialog('cancel')" v-if="editVisible">
             <el-scrollbar style="height:100%">
-                <div style="height:420px;">
-                    <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-                        <el-form-item label="名称" prop="name">
-                            <el-input v-model="form.name" maxlength="30"></el-input>
-                        </el-form-item>
-                        <el-form-item label="原价" prop="oldPrice">
-                            <el-input v-model="form.oldPrice" type="number"></el-input>
-                        </el-form-item>
-                        <el-form-item label="折扣价" prop="price">
-                            <el-input v-model="form.price" type="number"></el-input>
-                        </el-form-item>
-                        <el-form-item label="是否在首页展示">
-                            <el-select v-model="form.homePageShow">
-                                <el-option
-                                  v-for="item in showOption"
-                                  :key="item.value"
-                                  :label="item.label"
-                                  :value="item.value"
-                                >
-                                </el-option>
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="描述" prop="desc">
-                            <el-input v-model="form.desc" type="textarea" :rows="5"></el-input>
-                        </el-form-item>
-                    </el-form>
-                    <ul class="imageField">
-                        <li v-for="(item, i) in imageList" :key="i">
-                            <p><span v-if="!i" style="color: red">*</span> {{item.name}}</p>
-                            <el-upload :ref="'upload'+i" class="avatar-uploader" accept=".jpg,.jpeg,.png" action="#" :file-list="item.fileList" :limit="limit" list-type="picture-card" :on-change="handleChange(i)" :on-remove="handleRemove(i)" :on-preview="handlePictureCardPreview" :auto-upload="false" :multiple="false" :class="{'hide': item.hideUploadEdit}">
-                                <i class="el-icon-plus"></i>
-                            </el-upload>
-                        </li>
-                    </ul>
-                    <Editor />
-                </div>
+                <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
+                    <el-form-item label="名称" prop="name">
+                        <el-input v-model="form.name" maxlength="30"></el-input>
+                    </el-form-item>
+                    <el-form-item label="原价" prop="oldPrice">
+                        <el-input v-model="form.oldPrice" type="number"></el-input>
+                    </el-form-item>
+                    <el-form-item label="折扣价" prop="price">
+                        <el-input v-model="form.price" type="number"></el-input>
+                    </el-form-item>
+                    <el-form-item label="是否在首页展示">
+                        <el-select v-model="form.homePageShow">
+                            <el-option
+                              v-for="item in showOption"
+                              :key="item.value"
+                              :label="item.label"
+                              :value="item.value"
+                            >
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="描述" prop="desc">
+                        <el-input v-model="form.desc" type="textarea" :rows="5"></el-input>
+                    </el-form-item>
+                </el-form>
+                <ul class="imageField">
+                    <li v-for="(item, i) in imageList" :key="i">
+                        <p><span v-if="!i" style="color: red">*</span> {{item.name}}</p>
+                        <el-upload :ref="'upload'+i" class="avatar-uploader" accept=".jpg,.jpeg,.png" action="#" :file-list="item.fileList" :limit="limit" list-type="picture-card" :on-change="handleChange(i)" :on-remove="handleRemove(i)" :on-preview="handlePictureCardPreview" :auto-upload="false" :multiple="false" :class="{'hide': item.hideUploadEdit}">
+                            <i class="el-icon-plus"></i>
+                        </el-upload>
+                    </li>
+                </ul>
+                <Editor style="margin-top: 10px" ref="editorRef" v-model:info="form.information" />
             </el-scrollbar>
             <template #footer>
                 <span class="dialog-footer">
-                    <el-button @click="editVisible = false">取 消</el-button>
+                    <el-button @click="closeDialog('cancel')">取 消</el-button>
                     <el-button type="primary" @click="saveEdit">确 定</el-button>
                 </span>
             </template>
@@ -99,10 +97,9 @@
 </template>
 
 <script>
-import { ref, reactive, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, reactive } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
-import WangEditor from "wangEditor";
 import Editor from '../Editor.vue'
 import { getProduct, delProduct, updateProduct, addProduct } from "@/api/index";
 
@@ -114,6 +111,7 @@ export default {
     setup() {
         const router = useRouter();
         const imageUrl = import.meta.env.VITE_IMAGEURL;
+        const editorRef = ref();
         const showOption = [
             { value: 0, label: '否' },
             { value: 1, label: '是' }
@@ -187,7 +185,8 @@ export default {
             desc: '',
             oldPrice: '',
             price: '',
-            homePageShow: 0
+            homePageShow: 0,
+            information: ''
         });
 
         let formdata = new FormData();
@@ -269,6 +268,16 @@ export default {
             }
         }
 
+        const closeDialog = (type) => {
+            if (type === 'confirm') {
+                editorRef.value.confirmContent();
+            } else if (type === 'cancel') {
+                editorRef.value.cancelContent();
+            }
+            editVisible.value = false;
+            resetForm();
+        }
+
         // 保存
         const saveEdit = () => {
             formRef.value.validate(valid => {
@@ -287,9 +296,8 @@ export default {
                         }
                     }
                     method(formdata).then(res => {
-                        editVisible.value = false;
+                        closeDialog('confirm');
                         ElMessage.success(`${ifAdd.value ? '新增' : '修改'}成功`);
-                        resetForm();
                         getData();
                     }, err => {
                         formdata = new FormData();
@@ -297,29 +305,9 @@ export default {
                 }
             })
         };
-
-        // const editor = ref(null);
-        // const content = reactive({
-        //     html: "",
-        //     text: "",
-        // });
-        // let instance;
-        // onMounted(() => {
-        //     instance = new WangEditor(editor.value);
-        //     instance.config.zIndex = 1;
-        //     instance.create();
-        // });
-        // onBeforeUnmount(() => {
-        //     instance.destroy();
-        //     instance = null;
-        // });
-        // const syncHTML = () => {
-        //     content.html = instance.txt.html();
-        //     console.log(content.html);
-        // };
-
         return {
             imageUrl,
+            editorRef,
             query,
             tableData,
             pageTotal,
@@ -339,15 +327,12 @@ export default {
             saveEdit,
             add,
             resetForm,
+            closeDialog,
             handleRemove,
             handlePictureCardPreview,
             dialogImageUrl,
             dialogVisible,
             showOption,
-            // 编辑器
-            // syncHTML,
-            // editor,
-            // content,
         };
     },
     methods: {
